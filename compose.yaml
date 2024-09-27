@@ -1,7 +1,7 @@
-name: ur_module
+name: vention_rail_module
 services:
-  ur_module:
-    container_name: ur_module
+  vention_rail_module:
+    container_name: vention_rail_module
     image: ${IMAGE}
     build:
       context: .
@@ -12,7 +12,7 @@ services:
     command: python -m ur_rest_node --port 3011 --ur_ip ${UR_IP}
     env_file: .env
     volumes:
-      - ./src:/home/app/ur_module/src
-      - ./tests:/home/app/ur_module/tests
+      - ./src:/home/app/vention_rail_module/src
+      - ./tests:/home/app/vention_rail_module/tests
     ports:
       - 3011:3011
