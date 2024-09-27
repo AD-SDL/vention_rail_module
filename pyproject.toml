@@ -1,7 +1,7 @@
 [project]
-name = "ur_module"
+name = "vention_rail_module"
 version = "0.3.0"
-description = "Software for automatting a UR robot"
+description = "Software for automatting a Vention Rails"
 authors = [
     {name = "Ryan D. Lewis", email="ryan.lewis@anl.gov"},
     {name = "Rafael Vescovi", email="ravescovi@anl.gov"},
@@ -15,11 +15,6 @@ dependencies = [
     "fastapi>=0.103.2",
     "uvicorn>=0.21.1",
     "pytest",
-    "paramiko",
-    "scp",
-    "sockets",
-    "pyepics",
-    "urx@git+https://github.com/Dozgulbas/python-urx.git",
     "numpy",
 
 ]
@@ -29,7 +24,7 @@ readme = "README.md"
 license = {text = "MIT"}
 
 [project.urls]
-homepage = "https://github.com/AD-SDL/ur_module"
+homepage = "https://github.com/AD-SDL/vention_rail_module"
 
 ######################
 # Build Info + Tools #
