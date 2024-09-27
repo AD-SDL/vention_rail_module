@@ -1,2 +1,2 @@
 # vention_rail_module
-A repository to for the Vention Rail interfaces
+A repository for the Vention Rail interfaces
