@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from fastapi.datastructures import State
-from rail_driver.rail_interface import RailInterface
+from vention_rail_driver.rail_interface import RailInterface
 from typing_extensions import Annotated
 from wei.modules.rest_module import RESTModule
 from wei.types.module_types import ModuleState, ModuleStatus
