@@ -1,15 +1,13 @@
 """REST-based node for UR robots"""
 
-import json
 from pathlib import Path
-from typing import List
 
 from fastapi.datastructures import State
-from typing_extensions import Annotated
 from rail_driver.rail_interface import RailInterface
+from typing_extensions import Annotated
 from wei.modules.rest_module import RESTModule
 from wei.types.module_types import ModuleState, ModuleStatus
-from wei.types.step_types import ActionRequest, StepResponse, StepStatus
+from wei.types.step_types import ActionRequest, StepResponse
 from wei.utils import extract_version
 
 rest_module = RESTModule(
@@ -40,11 +38,11 @@ def rail_shutdown(state: State):
     state.rail.disconnect()
     print("Rail offline")
 
+
 @rest_module.state_handler()
 def state(state: State):
     """Returns the current state of the UR module"""
     if state.status not in [ModuleStatus.ERROR, ModuleStatus.INIT, None]:
-        # * Gets robot status by checking robot dashboard status messages.
         if state.rail.isMotionCompleted(axis=1):
             state.status = ModuleStatus.IDLE
         elif state.rail.isMotionCompleted(axis=1) is False:
@@ -61,6 +59,7 @@ def home(
     state.rail.home()
     return StepResponse.step_succeeded()
 
+
 @rest_module.action()
 def stop(
     state: State,
@@ -69,6 +68,7 @@ def stop(
     """Move the robot to a joint position"""
     state.rail.stop()
     return StepResponse.step_succeeded()
+
 
 @rest_module.action()
 def move(
@@ -79,8 +79,9 @@ def move(
     acceleration: Annotated[int, "Velocity"] = None,
 ) -> StepResponse:
     """Move the robot to a joint position"""
-    state.rail.move(position=position,speed=speed,acceleration=acceleration)
+    state.rail.move(position=position, speed=speed, acceleration=acceleration)
     return StepResponse.step_succeeded()
+
 
 @rest_module.action()
 def move_relative(
@@ -91,8 +92,9 @@ def move_relative(
     acceleration: Annotated[int, "Velocity"] = None,
 ) -> StepResponse:
     """Move the robot to a joint position"""
-    state.rail.move_relative(distance=distance,speed=speed,acceleration=acceleration)
+    state.rail.move_relative(distance=distance, speed=speed, acceleration=acceleration)
     return StepResponse.step_succeeded()
+
 
 if __name__ == "__main__":
     rest_module.start()
