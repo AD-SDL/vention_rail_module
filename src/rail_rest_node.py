@@ -35,10 +35,22 @@ def ur_startup(state: State):
 
 
 @rest_module.shutdown()
-def ur_shutdown(state: State):
-    """UR shutdown handler."""
-    state.ur.ur_connection.disconnect_ur()
-    print("UR offline")
+def rail_shutdown(state: State):
+    """Vention rail shutdown handler."""
+    state.rail.disconnect()
+    print("Rail offline")
+
+@rest_module.state_handler()
+def state(state: State):
+    """Returns the current state of the UR module"""
+    if state.status not in [ModuleStatus.ERROR, ModuleStatus.INIT, None]:
+        # * Gets robot status by checking robot dashboard status messages.
+        if state.rail.isMotionCompleted(axis=1):
+            state.status = ModuleStatus.IDLE
+        elif state.rail.isMotionCompleted(axis=1) is False:
+            state.status = ModuleStatus.BUSY
+    return ModuleState(status=state.status, error="")
+
 
 @rest_module.action()
 def home(
