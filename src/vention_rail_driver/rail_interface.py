@@ -1,6 +1,6 @@
 """Wrapper Interface for MachineMotion - RailInterface"""
 
-from MachineMotion import DEFAULT_IP, MachineMotion
+from vention_rail_driver.MachineMotion import DEFAULT_IP, MachineMotion
 
 
 class RailInterface:
