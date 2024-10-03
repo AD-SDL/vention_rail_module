@@ -10,9 +10,9 @@ class RailInterface:
         """Initialize the RailInterface with a MachineMotion instance."""
         self.hostname = hostname
         self.rail = None
-        self.speed = 50  # mm/s, must be less than 100
+        self.speed = 25  # mm/s, must be less than 100
         self.acceleration = 25  # mm/s^2, must be less than 100
-        self.rail_span = 500  # mm, rail span
+        self.rail_span = 1000  # mm, rail span
 
         self.connect()
         self.initialize()
@@ -29,8 +29,8 @@ class RailInterface:
     def templateCallback(self, data):
         "Templete Callback"
         self.g = data
-        if self.verbose:
-            print("gCode %s" % data)
+        #if self.verbose:
+        #    print("gCode %s" % data)
 
     def disconnect(self):
         """Disconnect from the Rail"""
