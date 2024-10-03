@@ -15,11 +15,11 @@ class TestImports(TestModule_Base):
     # @patch("sys.argv", ["test", "--ur_ip", "164.54.116.129"])
     def test_driver_import(self):
         """Test the driver and rest node imports"""
-        import ur_driver
-        import ur_rest_node
+        import vention_rail_driver
+        import rail_rest_node
 
-        assert ur_driver
-        assert ur_rest_node
+        assert vention_rail_driver
+        assert rail_rest_node
 
 
 if __name__ == "__main__":
