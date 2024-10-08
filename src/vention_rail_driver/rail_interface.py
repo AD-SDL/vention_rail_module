@@ -10,8 +10,8 @@ class RailInterface:
         """Initialize the RailInterface with a MachineMotion instance."""
         self.hostname = hostname
         self.rail = None
-        self.speed = 25  # mm/s, must be less than 100
-        self.acceleration = 25  # mm/s^2, must be less than 100
+        self.speed = 10  # mm/s, must be less than 100
+        self.acceleration = 5  # mm/s^2, must be less than 100
         self.rail_span = 1000  # mm, rail span
 
         self.connect()
@@ -54,6 +54,9 @@ class RailInterface:
     def home(self):
         """Home the rail."""
         try:
+            self.speed = 10
+            self.acceleration = 5
+            self.initialize()
             self.rail.emitHome(axis=1)
             self.rail.waitForMotionCompletion()
             print("Rail Homed.")

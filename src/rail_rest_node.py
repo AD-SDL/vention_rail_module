@@ -42,10 +42,10 @@ def rail_shutdown(state: State):
 @rest_module.state_handler()
 def state(state: State):
     """Returns the current state of the UR module"""
-    if state.status not in [ModuleStatus.ERROR, ModuleStatus.INIT, None]:
-        if state.rail.isMotionCompleted(axis=1):
+    if state.status not in [ModuleStatus.BUSY, ModuleStatus.ERROR, ModuleStatus.INIT, None]:
+        if state.rail.rail.isMotionCompleted():
             state.status = ModuleStatus.IDLE
-        elif state.rail.isMotionCompleted(axis=1) is False:
+        else:
             state.status = ModuleStatus.BUSY
     return ModuleState(status=state.status, error="")
 
