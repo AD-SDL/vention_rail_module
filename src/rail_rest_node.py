@@ -39,16 +39,6 @@ def rail_shutdown(state: State):
     print("Rail offline")
 
 
-@rest_module.state_handler()
-def state(state: State):
-    """Returns the current state of the UR module"""
-    if state.status not in [ModuleStatus.BUSY, ModuleStatus.ERROR, ModuleStatus.INIT, None]:
-        if state.rail.rail.isMotionCompleted():
-            state.status = ModuleStatus.IDLE
-        else:
-            state.status = ModuleStatus.BUSY
-    return ModuleState(status=state.status, error="")
-
 
 @rest_module.action()
 def home(
@@ -80,8 +70,10 @@ def move(
 ) -> StepResponse:
     """Move the robot to a joint position"""
     state.rail.move(position=position, speed=speed, acceleration=acceleration)
-    return StepResponse.step_succeeded()
-
+    if state.rail.get_position() == position:
+        return StepResponse.step_succeeded()
+    else:
+        return StepResponse.step_failed(error="Move Interrupted")
 
 @rest_module.action()
 def move_relative(
