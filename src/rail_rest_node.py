@@ -70,7 +70,7 @@ def move(
 ) -> StepResponse:
     """Move the robot to a joint position"""
     state.rail.move(position=position, speed=speed, acceleration=acceleration)
-    if state.rail.get_position() == position:
+    if state.rail.get_position() - position < 1:
         return StepResponse.step_succeeded()
     else:
         return StepResponse.step_failed(error="Move Interrupted")
