@@ -1,57 +1,65 @@
 """Wrapper Interface for MachineMotion - RailInterface"""
 
-from vention_rail_driver.MachineMotion import DEFAULT_IP, MachineMotion
+from typing import Any, Optional
+
+from madsci.client.event_client import EventClient
+
+from vention_rail_interface.MachineMotion import MachineMotion
+from vention_rail_node_config import VentionRailNodeConfig
 
 
 class RailInterface:
     """An interface to control Vention Rail over the MachineMotion driver"""
 
-    def __init__(self, hostname=DEFAULT_IP):
+    def __init__(
+        self, config: VentionRailNodeConfig, logger: Optional[EventClient] = None
+    ) -> "RailInterface":
         """Initialize the RailInterface with a MachineMotion instance."""
-        self.hostname = hostname
+        self.rail_ip = config.rail_ip
         self.rail = None
-        self.speed = 10  # mm/s, must be less than 100
-        self.acceleration = 5  # mm/s^2, must be less than 100
-        self.rail_span = 1000  # mm, rail span
+        self.speed = config.speed
+        self.acceleration = config.acceleration
+        self.rail_span = 1000  # mm, rail span (half the true length, for some reason)
+
+        self.logger = logger if logger else EventClient()
 
         self.connect()
         self.initialize()
 
-    def connect(self):
+    def connect(self) -> None:
         """Connect to the Rail"""
         try:
             # Establish connection logic (if applicable)
-            self.rail = MachineMotion(self.hostname, self.templateCallback)
-            print("Connected to the Vention Rail.")
+            self.rail = MachineMotion(self.rail_ip, self.gcode_callback)
+            self.logger.info("Connected to the Vention Rail.")
         except Exception as e:
-            print(f"Failed to connect: {e}")
+            self.logger.error(f"Failed to connect: {e}")
+            raise e
 
-    def templateCallback(self, data):
-        "Templete Callback"
-        self.g = data
-        #if self.verbose:
-        #    print("gCode %s" % data)
+    def gcode_callback(self, data: Any) -> None:
+        """Template gcode Callback"""
+        self.gcode = data
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Disconnect from the Rail"""
         try:
             self.rail.myMqttClient.loop_stop()
             self.rail.myMqttClient.disconnect()
-            print("Disconnected from the Rail")
+            self.logger.info("Disconnected from the Rail")
         except Exception as e:
-            print(f"Failed to disconnect: {e}")
+            self.logger.error(f"Failed to disconnect: {e}")
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initialize the Rail system (configurations or setup)."""
         try:
             # Placeholder for any initialization logic
             self.rail.emitSpeed(speed=self.speed)
             self.rail.emitAcceleration(acceleration=self.acceleration)
-            print("Initialization complete.")
+            self.logger.info("Initialization complete.")
         except Exception as e:
-            print(f"Initialization failed: {e}")
+            self.logger.error(f"Initialization failed: {e}")
 
-    def home(self):
+    def home(self) -> None:
         """Home the rail."""
         try:
             self.speed = 10
@@ -59,19 +67,23 @@ class RailInterface:
             self.initialize()
             self.rail.emitHome(axis=1)
             self.rail.waitForMotionCompletion()
-            print("Rail Homed.")
+            self.logger.info("Rail Homed.")
         except Exception as e:
-            print(f"Failed to home axes: {e}")
+            self.logger.error(f"Failed to home axes: {e}")
 
-    def get_position(self):
+    def get_position(self) -> float:
         """Gets the current position of the rail"""
         try:
-            cur_pos = self.rail.getActualPositions(axis=1)
-            return cur_pos
+            return self.rail.getActualPositions(axis=1)
         except Exception as er:
-            print(f"Failed to get the current position: {er}")
+            self.logger.error(f"Failed to get the current position: {er}")
 
-    def move(self, position: float, speed: int = None, acceleration: int = None):
+    def move(
+        self,
+        position: float,
+        speed: Optional[int] = None,
+        acceleration: Optional[int] = None,
+    ) -> None:
         """Move the rail to a desired position."""
         try:
             if speed or acceleration:
@@ -79,15 +91,20 @@ class RailInterface:
                 self.acceleration = acceleration
                 self.initialize()
             if position < 0 or position > self.rail_span:
-                print("Position must be in 0-500 range")
+                self.logger.warning("Position must be in 0-500 range")
                 return
             self.rail.moveToPosition(axis=1, position=position)
             self.rail.waitForMotionCompletion()
-            print(f"Rail moved to position the {position}.")
+            self.logger.info(f"Rail moved to position {position}.")
         except Exception as e:
-            print(f"Failed to move the rail: {e}")
+            self.logger.error(f"Failed to move the rail: {e}")
 
-    def move_relative(self, distance, speed: int = None, acceleration: int = None):
+    def move_relative(
+        self,
+        distance: float,
+        speed: Optional[int] = None,
+        acceleration: Optional[int] = None,
+    ) -> float:
         """Moves the rail to relative distance"""
         try:
             if speed or acceleration:
@@ -102,31 +119,33 @@ class RailInterface:
             self.rail.waitForMotionCompletion()
             return self.get_position()
         except Exception as er:
-            print(er)
+            self.logger.error(er)
 
-    def stop(self):
+    def stop(self) -> bool:
         """Stop all motion."""
         try:
             self.rail.stopAllMotion()
-            print("All motion stopped.")
+            self.logger.info("All motion stopped.")
+            return True
         except Exception as e:
-            print(f"Failed to stop motion: {e}")
+            self.logger.error(f"Failed to stop motion: {e}")
+            return False
 
-    def estop(self):
+    def estop(self) -> None:
         """Trigger emergency stop."""
         try:
             self.rail.triggerEstop()
-            print("Emergency stop triggered.")
+            self.logger.info("Emergency stop triggered.")
         except Exception as e:
-            print(f"Failed to trigger emergency stop: {e}")
+            self.logger.error(f"Failed to trigger emergency stop: {e}")
 
-    def release_estop(self):
+    def release_estop(self) -> None:
         """Release emergency stop."""
         try:
             self.rail.releaseEstop()
-            print("Emergency stop released.")
+            self.logger.info("Emergency stop released.")
         except Exception as e:
-            print(f"Failed to release emergency stop: {e}")
+            self.logger.error(f"Failed to release emergency stop: {e}")
 
 
 # Example of usage

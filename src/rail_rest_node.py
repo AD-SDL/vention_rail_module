@@ -1,92 +1,82 @@
 """REST-based node for UR robots"""
 
-from pathlib import Path
+from typing import Annotated, Optional
 
-from fastapi.datastructures import State
-from typing_extensions import Annotated
-from vention_rail_driver.rail_interface import RailInterface
-from wei.modules.rest_module import RESTModule
-from wei.types.module_types import ModuleState, ModuleStatus
-from wei.types.step_types import ActionRequest, StepResponse
-from wei.utils import extract_version
+from madsci.common.types.action_types import ActionFailed, ActionSucceeded
+from madsci.common.types.location_types import LocationArgument
+from madsci.node_module.helpers import action
+from madsci.node_module.rest_node_module import RestNode
+from MADSci.src.madsci_common.madsci.common.types.action_types import ActionResult
 
-rest_module = RESTModule(
-    name="vention_rail_node",
-    version=extract_version(Path(__file__).parent.parent / "pyproject.toml"),
-    description="A node to control the vention rail",
-    model="vention_rail",
-)
-rest_module.arg_parser.add_argument(
-    "--rail_ip",
-    type=str,
-    default="192.168.7.2",
-    help="Hostname or IP address to connect to Vention Rail",
-)
+from vention_rail_interface.rail_interface import RailInterface
+from vention_rail_node_config import VentionRailNodeConfig
 
 
-@rest_module.startup()
-def ur_startup(state: State):
-    """UR startup handler."""
-    state.rail = None
-    state.rail = RailInterface(hostname=state.rail_ip)
-    print("Vention Rail is online")
+class VentionRailNode(RestNode):
+    """MADSci Rest Node for controlling a Vention Linear Rail"""
 
+    config_model = VentionRailNodeConfig
 
-@rest_module.shutdown()
-def rail_shutdown(state: State):
-    """Vention rail shutdown handler."""
-    state.rail.disconnect()
-    print("Rail offline")
+    def startup_handler(self) -> None:
+        """Initialize the Rail Interface"""
+        self.rail = RailInterface(config=self.config, logger=self.logger)
 
+    def shutdown_handler(self) -> None:
+        """Vention rail shutdown handler."""
+        self.rail.disconnect()
 
+    def state_handler(self) -> None:
+        """Periodically update the node's state"""
+        if self.rail:
+            self.node_state["position"] = self.rail.get_position()
 
-@rest_module.action()
-def home(
-    state: State,
-    action: ActionRequest,
-) -> StepResponse:
-    """Move the robot to a joint position"""
-    state.rail.home()
-    return StepResponse.step_succeeded()
+    @action
+    def home(self) -> ActionResult:
+        """Move the robot to home"""
+        self.rail.home()
+        return ActionSucceeded()
 
+    @action
+    def stop(self) -> ActionResult:
+        """Stop the Rail"""
+        self.rail.stop()
+        return ActionSucceeded()
 
-@rest_module.action()
-def stop(
-    state: State,
-    action: ActionRequest,
-) -> StepResponse:
-    """Move the robot to a joint position"""
-    state.rail.stop()
-    return StepResponse.step_succeeded()
+    @action
+    def move(
+        self,
+        position: Annotated[LocationArgument, "Joint position to move to"],
+        speed: Annotated[Optional[int], "Speed"] = None,
+        acceleration: Annotated[Optional[int], "Acceleration"] = None,
+    ) -> ActionResult:
+        """Move the robot to a joint position"""
+        self.rail.move(
+            position=position.location, speed=speed, acceleration=acceleration
+        )
+        if self.rail.get_position() - position.location < 1:
+            return ActionSucceeded()
+        return ActionFailed(error="Move Interrupted")
 
+    @action
+    def move_relative(
+        self,
+        distance: Annotated[int, "Distance to move to"],
+        speed: Annotated[Optional[int], "Speed"] = None,
+        acceleration: Annotated[Optional[int], "Acceleration"] = None,
+    ) -> ActionResult:
+        """Move the robot to a relative position"""
+        self.rail.move_relative(
+            distance=distance, speed=speed, acceleration=acceleration
+        )
+        return ActionSucceeded()
 
-@rest_module.action()
-def move(
-    state: State,
-    action: ActionRequest,
-    position: Annotated[float, "Joint position to move to"],
-    speed: Annotated[int, "Acceleration"] = None,
-    acceleration: Annotated[int, "Velocity"] = None,
-) -> StepResponse:
-    """Move the robot to a joint position"""
-    state.rail.move(position=position, speed=speed, acceleration=acceleration)
-    if state.rail.get_position() - position < 1:
-        return StepResponse.step_succeeded()
-    else:
-        return StepResponse.step_failed(error="Move Interrupted")
-
-@rest_module.action()
-def move_relative(
-    state: State,
-    action: ActionRequest,
-    distance: Annotated[int, "Distance to move to"],
-    speed: Annotated[int, "Acceleration"] = None,
-    acceleration: Annotated[int, "Velocity"] = None,
-) -> StepResponse:
-    """Move the robot to a joint position"""
-    state.rail.move_relative(distance=distance, speed=speed, acceleration=acceleration)
-    return StepResponse.step_succeeded()
+    def safety_stop(self) -> None:
+        """Stop the rail immediately"""
+        if self.rail:
+            return self.rail.estop()
+        return False
 
 
 if __name__ == "__main__":
-    rest_module.start()
+    vention_rail_node = VentionRailNode()
+    vention_rail_node.start_node()

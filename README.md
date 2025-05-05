@@ -1,2 +1,3 @@
 # vention_rail_module
-A repository for the Vention Rail interfaces
+
+Provides a MADSci Node for controlling a Vention MachineMotion linear rail.
