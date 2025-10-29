@@ -1,17 +1,16 @@
 """REST-based node for UR robots"""
 
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 from madsci.common.types.action_types import ActionFailed
 from madsci.common.types.admin_command_types import AdminCommandResponse
 from madsci.common.types.location_types import LocationArgument
+from madsci.common.types.node_types import RestNodeConfig
 from madsci.node_module.helpers import action
 from madsci.node_module.rest_node_module import RestNode
-from vention_rail_interface.rail_interface import RailInterface, RailStatus
-
-from madsci.common.types.node_types import RestNodeConfig
 
 from vention_rail_interface.MachineMotion import DEFAULT_IP
+from vention_rail_interface.rail_interface import RailInterface, RailStatus
 
 
 class VentionRailNodeConfig(RestNodeConfig):
@@ -26,8 +25,10 @@ class VentionRailNodeConfig(RestNodeConfig):
     rail_span: float = 1000
     """Default rail span in mm, must be half the true length (for some reason)"""
 
+
 class VentionRailNode(RestNode):
     """MADSci Rest Node for controlling a Vention Linear Rail"""
+
     rail_interface: RailInterface = None
     config: VentionRailNodeConfig = VentionRailNodeConfig()
     config_model = VentionRailNodeConfig
@@ -36,7 +37,12 @@ class VentionRailNode(RestNode):
         """Initialize the Rail Interface"""
         try:
             self.logger.log("Node initializing")
-            self.rail_interface = RailInterface(ip=self.config.rail_ip, speed=self.config.speed, acceleration=self.config.acceleration, logger=self.logger)
+            self.rail_interface = RailInterface(
+                ip=self.config.rail_ip,
+                speed=self.config.speed,
+                acceleration=self.config.acceleration,
+                logger=self.logger,
+            )
         except Exception as e:
             self.logger.log_error(f"Failed to initialize Rail Interface: {e}")
             self.startup_has_run = False
@@ -68,10 +74,10 @@ class VentionRailNode(RestNode):
                 "is_moving": False,
             }
             return
-        
+
         # Get comprehensive status from rail interface
         detailed_status = self.rail_interface.get_detailed_status()
-        
+
         # Update node state with all relevant information
         self.node_state = {
             "rail_status_code": detailed_status["status"],
@@ -80,7 +86,7 @@ class VentionRailNode(RestNode):
             "is_homed": detailed_status["is_homed"],
             "is_moving": detailed_status["is_moving"],
         }
-        
+
         # Log status changes or important states
         status = self.rail_interface.get_status()
         if status == RailStatus.ESTOP:
@@ -91,16 +97,14 @@ class VentionRailNode(RestNode):
             self.logger.log_warning("Rail is not HOMED")
 
     @action
-    def home(self):
+    def home(self) -> None:
         """Move the robot to home"""
         self.rail_interface.home()
-        return 
 
     @action
-    def stop(self):
+    def stop(self) -> None:
         """Stop the Rail"""
         self.rail_interface.stop()
-        return 
 
     @action
     def move(
@@ -108,13 +112,13 @@ class VentionRailNode(RestNode):
         position: Annotated[LocationArgument, "Joint position to move to"],
         speed: Annotated[Optional[int], "Speed"] = None,
         acceleration: Annotated[Optional[int], "Acceleration"] = None,
-    ):
+    ) -> Any:
         """Move the robot to a joint position"""
         self.rail_interface.move(
             position=position.location, speed=speed, acceleration=acceleration
         )
         if self.rail_interface.get_position() - position.location < 1:
-            return 
+            return None
         return ActionFailed(error="Move Interrupted")
 
     @action
@@ -123,12 +127,11 @@ class VentionRailNode(RestNode):
         distance: Annotated[int, "Distance to move to"],
         speed: Annotated[Optional[int], "Speed"] = None,
         acceleration: Annotated[Optional[int], "Acceleration"] = None,
-    ):
+    ) -> None:
         """Move the robot to a relative position"""
         self.rail_interface.move_relative(
             distance=distance, speed=speed, acceleration=acceleration
         )
-        return 
 
     def safety_stop(self) -> AdminCommandResponse:
         """Stop the rail immediately"""
@@ -137,7 +140,7 @@ class VentionRailNode(RestNode):
             self.rail_interface.estop()
             return AdminCommandResponse(success=True)
         return AdminCommandResponse(success=False)
-    
+
     def estop_clear(self) -> AdminCommandResponse:
         """Clear the emergency stop"""
         if self.rail_interface:
@@ -146,7 +149,7 @@ class VentionRailNode(RestNode):
             self.logger.log("Emergency stop cleared.")
             return AdminCommandResponse(success=True)
         return AdminCommandResponse(success=False)
-    
+
     def reset(self) -> AdminCommandResponse:
         """Reset the Vention Rail"""
         self.logger.log("Resetting node...")
@@ -154,6 +157,7 @@ class VentionRailNode(RestNode):
         result = super().reset()
         self.logger.log("Node reset.")
         return result
+
 
 if __name__ == "__main__":
     vention_rail_node = VentionRailNode()

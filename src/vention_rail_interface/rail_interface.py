@@ -1,14 +1,16 @@
 """Wrapper Interface for MachineMotion - RailInterface"""
 
-from typing import Any, Optional, Dict
 from enum import Enum
+from typing import Any, Dict, Optional  # noqa
 
 from madsci.client.event_client import EventClient
 
 from vention_rail_interface.MachineMotion import MachineMotion
 
+
 class RailStatus(Enum):
     """Rail status states"""
+
     IDLE = "IDLE"
     BUSY = "BUSY"
     ESTOP = "ESTOP"
@@ -16,11 +18,16 @@ class RailStatus(Enum):
     NOT_HOMED = "NOT_HOMED"
     UNKNOWN = "UNKNOWN"
 
+
 class RailInterface:
     """An interface to control Vention Rail over the MachineMotion driver"""
 
     def __init__(
-        self, ip: str, speed: float, acceleration: float, logger: Optional[EventClient] = None
+        self,
+        ip: str,
+        speed: float,
+        acceleration: float,
+        logger: Optional[EventClient] = None,
     ) -> "RailInterface":
         """Initialize the RailInterface with a MachineMotion instance."""
         self.rail_ip = ip
@@ -96,10 +103,10 @@ class RailInterface:
 
     def get_estop_state(self) -> Optional[bool]:
         """Get the current emergency stop state.
-        
+
         The estop state is continuously updated by the MachineMotion MQTT client
         in the background, so this method returns the current state at any time.
-        
+
         Returns:
             bool: True if estop is active (triggered)
                   False if estop is not active (released)
@@ -108,19 +115,18 @@ class RailInterface:
         try:
             # The estopStatus attribute is automatically updated by MQTT callbacks
             # in the MachineMotion class, so we can read it at any time
-            if self.rail and hasattr(self.rail, 'estopStatus'):
+            if self.rail and hasattr(self.rail, "estopStatus"):
                 return self.rail.estopStatus
-            else:
-                self.logger.warning("Estop status not available - rail not initialized")
-                return None
+            self.logger.warning("Estop status not available - rail not initialized")
+            return None
         except Exception as e:
             self._last_error = str(e)
             self.logger.error(f"Failed to get estop state: {e}")
             return None
-        
+
     def is_moving(self) -> bool:
         """Check if the rail is currently moving.
-        
+
         Returns:
             bool: True if rail is moving, False if motion is complete
         """
@@ -132,9 +138,9 @@ class RailInterface:
             self.logger.error(f"Failed to check motion status: {e}")
             return False
 
-    def get_status(self) -> RailStatus:
+    def get_status(self) -> RailStatus:  # noqa
         """Get the comprehensive status of the rail system.
-        
+
         Returns:
             RailStatus: Current status of the rail:
                 - IDLE: Initialized, homed, not moving, no errors
@@ -149,34 +155,34 @@ class RailInterface:
             estop_state = self.get_estop_state()
             if estop_state is True:
                 return RailStatus.ESTOP
-            
+
             # Check if rail is even initialized/connected
             if not self._is_initialized or self.rail is None:
                 return RailStatus.ERROR
-            
+
             # Check for recent errors
             if self._last_error is not None:
                 return RailStatus.ERROR
-            
+
             # Check if rail is moving
             if self.is_moving():
                 return RailStatus.BUSY
-            
+
             # Check if homed
             if not self._is_homed:
                 return RailStatus.NOT_HOMED
-            
+
             # Everything is fine - system is idle
             return RailStatus.IDLE
-            
+
         except Exception as e:
             self.logger.error(f"Failed to get status: {e}")
             self._last_error = str(e)
             return RailStatus.UNKNOWN
-    
-    def get_detailed_status(self) -> Dict[str, Any]:
+
+    def get_detailed_status(self) -> Dict[str, Any]:  # noqa
         """Get detailed status information about the rail system.
-        
+
         Returns:
             dict: Detailed status information including:
                 - status: Overall status (RailStatus enum)
@@ -195,18 +201,19 @@ class RailInterface:
                 "is_homed": self._is_homed,
                 "is_moving": self.is_moving(),
                 "position": None,
-                "last_error": self._last_error
+                "last_error": self._last_error,
             }
-            
+
             # Try to get position if system is in good state
             if status["estop_active"] is False and self._is_initialized:
                 try:
                     status["position"] = self.get_position()
-                except:
+                except Exception as e:
+                    self.logger.error(f"Failed to get position: {e}")
                     status["position"] = "unavailable"
-            
+
             return status
-            
+
         except Exception as e:
             self.logger.error(f"Failed to get detailed status: {e}")
             return {
@@ -216,9 +223,9 @@ class RailInterface:
                 "is_homed": self._is_homed,
                 "is_moving": False,
                 "position": None,
-                "last_error": str(e)
+                "last_error": str(e),
             }
-    
+
     def clear_error(self) -> None:
         """Clear the last error state."""
         self._last_error = None
@@ -231,7 +238,7 @@ class RailInterface:
         except Exception as er:
             self._last_error = str(er)
             self.logger.error(f"Failed to get the current position: {er}")
-    
+
     def move(
         self,
         position: float,
@@ -309,6 +316,7 @@ class RailInterface:
             self.logger.info("System reset.")
         except Exception as e:
             self.logger.error(f"Failed to reset system: {e}")
+
 
 # Example of usage
 if __name__ == "__main__":
