@@ -36,7 +36,7 @@ class VentionRailNode(RestNode):
         """Initialize the Rail Interface"""
         try:
             self.logger.log("Node initializing")
-            self.rail_interface = RailInterface(config=self.config, logger=self.logger)
+            self.rail_interface = RailInterface(ip=self.config.rail_ip, speed=self.config.speed, acceleration=self.config.acceleration, logger=self.logger)
         except Exception as e:
             self.logger.log_error(f"Failed to initialize Rail Interface: {e}")
             self.startup_has_run = False
@@ -148,10 +148,8 @@ class VentionRailNode(RestNode):
         return AdminCommandResponse(success=False)
     
     def reset(self) -> AdminCommandResponse:
-        """Reset the ur robot"""
+        """Reset the Vention Rail"""
         self.logger.log("Resetting node...")
-        # If resetting startup handler does not work, try re-initializing the dashboard
-        # self.ur_interface.ur_dashboard.initialize()
         self.rail_interface.system_reset()
         result = super().reset()
         self.logger.log("Node reset.")

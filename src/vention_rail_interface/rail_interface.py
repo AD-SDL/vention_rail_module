@@ -6,7 +6,6 @@ from enum import Enum
 from madsci.client.event_client import EventClient
 
 from vention_rail_interface.MachineMotion import MachineMotion
-from vention_rail_node_config import VentionRailNodeConfig
 
 class RailStatus(Enum):
     """Rail status states"""
@@ -21,13 +20,13 @@ class RailInterface:
     """An interface to control Vention Rail over the MachineMotion driver"""
 
     def __init__(
-        self, config: VentionRailNodeConfig, logger: Optional[EventClient] = None
+        self, ip: str, speed: float, acceleration: float, logger: Optional[EventClient] = None
     ) -> "RailInterface":
         """Initialize the RailInterface with a MachineMotion instance."""
-        self.rail_ip = config.rail_ip
+        self.rail_ip = ip
         self.rail = None
-        self.speed = config.speed
-        self.acceleration = config.acceleration
+        self.speed = speed
+        self.acceleration = acceleration
         self.rail_span = 1000  # mm, rail span (half the true length, for some reason)
 
         self.logger = logger if logger else EventClient()
