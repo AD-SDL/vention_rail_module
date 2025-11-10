@@ -1,6 +1,6 @@
 """REST-based node for UR robots"""
 
-from typing import Annotated, Any, Optional
+from typing import Annotated, Optional
 
 from madsci.common.types.action_types import ActionFailed
 from madsci.common.types.admin_command_types import AdminCommandResponse
@@ -112,7 +112,7 @@ class VentionRailNode(RestNode):
         position: Annotated[LocationArgument, "Joint position to move to"],
         speed: Annotated[Optional[int], "Speed"] = None,
         acceleration: Annotated[Optional[int], "Acceleration"] = None,
-    ) -> Any:
+    ) -> None:
         """Move the robot to a joint position"""
         self.rail_interface.move(
             position=position.location, speed=speed, acceleration=acceleration
