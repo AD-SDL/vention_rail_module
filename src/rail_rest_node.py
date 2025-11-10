@@ -62,39 +62,44 @@ class VentionRailNode(RestNode):
         except Exception as e:
             self.logger.log_error(f"Failed to shutdown Rail Interface: {e}")
 
-    def state_handler(self) -> None:
-        """Periodically update the node's state"""
+    def status_handler(self) -> None:
+        """Handle the status of the node"""
         if self.rail_interface is None:
             self.logger.log_error("Rail interface is not initialized")
-            self.node_state = {
-                "rail_status_code": "NOT_INITIALIZED",
-                "current_position": None,
-                "estop_active": None,
-                "is_homed": False,
-                "is_moving": False,
-            }
             return
-
-        # Get comprehensive status from rail interface
-        detailed_status = self.rail_interface.get_detailed_status()
-
-        # Update node state with all relevant information
-        self.node_state = {
-            "rail_status_code": detailed_status["status"],
-            "current_position": detailed_status["position"],
-            "estop_active": detailed_status["estop_active"],
-            "is_homed": detailed_status["is_homed"],
-            "is_moving": detailed_status["is_moving"],
-        }
 
         # Log status changes or important states
         status = self.rail_interface.get_status()
         if status == RailStatus.ESTOP:
             self.logger.log_error("E-STOP is active")
+            self.node_status.stopped = True
         elif status == RailStatus.ERROR:
-            self.logger.log_error(f"ERROR: {detailed_status['last_error']}")
-        elif status == RailStatus.NOT_HOMED:
-            self.logger.log_warning("Rail is not HOMED")
+            self.logger.log_error("Rail is in ERROR state")
+            self.node_status.errored = True
+        elif status == RailStatus.BUSY:
+            self.node_status.busy = True
+        elif status == RailStatus.IDLE:
+            self.node_status.busy = False
+            self.node_status.stopped = False
+            self.node_status.errored = False
+
+    def state_handler(self) -> None:
+        """Periodically update the node's state"""
+        if self.rail_interface is None:
+            self.logger.log_error("Rail interface is not initialized")
+            return
+
+        rail_status = self.rail_interface.get_detailed_status()
+
+        # Update node state with all relevant information
+        self.node_state = {
+            "status": rail_status["status"],
+            "current_position": rail_status["position"],
+            "estop_active": rail_status["estop_active"],
+            "is_initialized": rail_status["is_initialized"],
+            "is_homed": rail_status["is_homed"],
+            "is_moving": rail_status["is_moving"],
+        }
 
     @action
     def home(self) -> None:
