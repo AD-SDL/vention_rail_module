@@ -61,13 +61,13 @@ class VentionRailNode(RestNode):
             self.logger.log("Shutdown complete.")
         except Exception as e:
             self.logger.log_error(f"Failed to shutdown Rail Interface: {e}")
-    
+
     def status_handler(self) -> None:
         """Handle the status of the node"""
         if self.rail_interface is None:
             self.logger.log_error("Rail interface is not initialized")
             return
-        
+
         # Log status changes or important states
         status = self.rail_interface.get_status()
         if status == RailStatus.ESTOP:
@@ -88,7 +88,7 @@ class VentionRailNode(RestNode):
         if self.rail_interface is None:
             self.logger.log_error("Rail interface is not initialized")
             return
-        
+
         rail_status = self.rail_interface.get_detailed_status()
 
         # Update node state with all relevant information
