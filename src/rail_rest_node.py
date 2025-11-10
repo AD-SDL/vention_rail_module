@@ -78,7 +78,7 @@ class VentionRailNode(RestNode):
             self.node_status.errored = True
         elif status == RailStatus.BUSY:
             self.node_status.busy = True
-        elif status == RailStatus.IDLE:
+        elif status in (RailStatus.IDLE, RailStatus.NOT_HOMED):
             self.node_status.busy = False
             self.node_status.stopped = False
             self.node_status.errored = False
