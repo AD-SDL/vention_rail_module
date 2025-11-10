@@ -116,6 +116,7 @@ class RailInterface:
             # The estopStatus attribute is automatically updated by MQTT callbacks
             # in the MachineMotion class, so we can read it at any time
             if self.rail and hasattr(self.rail, "estopStatus"):
+                self._last_error = None
                 return self.rail.estopStatus
             self.logger.warning("Estop status not available - rail not initialized")
             return None
@@ -132,6 +133,7 @@ class RailInterface:
         """
         try:
             # isMotionCompleted returns True when NOT moving
+            self._last_error = None
             return not self.rail.isMotionCompleted()
         except Exception as e:
             self._last_error = str(e)
@@ -234,6 +236,7 @@ class RailInterface:
     def get_position(self) -> float:
         """Gets the current position of the rail"""
         try:
+            self._last_error = None
             return self.rail.getActualPositions(axis=1)
         except Exception as er:
             self._last_error = str(er)
@@ -260,6 +263,8 @@ class RailInterface:
         except Exception as e:
             self._last_error = str(e)
             self.logger.error(f"Failed to move the rail: {e}")
+        else:
+            self._last_error = None
 
     def move_relative(
         self,
@@ -269,6 +274,8 @@ class RailInterface:
     ) -> float:
         """Moves the rail to relative distance"""
         try:
+            self._last_error = None
+
             if speed or acceleration:
                 self.speed = speed
                 self.acceleration = acceleration
@@ -282,6 +289,7 @@ class RailInterface:
             return self.get_position()
         except Exception as er:
             self.logger.error(er)
+            self._last_error = str(er)
 
     def stop(self) -> bool:
         """Stop all motion."""
