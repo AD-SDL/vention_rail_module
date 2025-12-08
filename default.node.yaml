@@ -1,0 +1,7 @@
+node_name: default.node
+node_id: 01K8RZJYN488VXBD8G8C0ZVFFA
+node_description: null
+node_type: device
+module_name: vention_rail_node
+module_version: 0.0.1
+capabilities: null
